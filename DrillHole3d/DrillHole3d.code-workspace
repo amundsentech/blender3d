@@ -1,10 +1,12 @@
 {
 	"folders": [
 		{
-			"path": "."
+			"name": "kay_curate",
+			"path": "../../kay_curate"
 		},
 		{
-			"path": "../../kay_curate"
+			"name": "blender3d",
+			"path": ".."
 		}
 	],
 	"settings": {}

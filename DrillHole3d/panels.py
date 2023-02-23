@@ -60,8 +60,6 @@ class VIEW3D_PT_choose_sheet(bpy.types.Panel):
         row=box.row()
         row.operator('object.get_columns')
 
-
-
 class VIEW3D_PT_choose_headers(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_choose_columns"
     bl_label = "Choose Columns"
@@ -102,7 +100,10 @@ class VIEW3D_PT_choose_headers(bpy.types.Panel):
 
     # def update_callback(self, context):
     #     # Update the menu when the keyword variable is updated
-    #     self.layout.menu('OBJECT_MT_column_dropdown_menu', text=context.scene[c])'''helper tool'''
+    #     self.layout.menu('OBJECT_MT_column_dropdown_menu', text=context.scene[c])
+    # 
+    # 
+'''helper tool'''
 
 
 def create_dropdown_options(items):

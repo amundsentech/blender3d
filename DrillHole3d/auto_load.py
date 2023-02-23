@@ -7,9 +7,17 @@ import pkgutil
 import importlib
 from pathlib import Path
 import subprocess
+import addon_utils as addons
 
-
-pkgs = {'pandas': 'pd', 'tqdm': 'tqdm','numpy':'np','openpyxl':'pxl','xlrd':'xlrd'}
+pkgs = {'pandas': 'pd',
+ 'tqdm': 'tqdm',
+ 'numpy':'np',
+ 'openpyxl':'pxl',
+ 'debugpy':'debugpy',
+ 'pyproj':'pyproj',
+#  'GDAL':'GDAL',
+ 'matplotlib':'matplotlib'
+ }
 def check_packages():
     for p in pkgs:
         s = pkgs[p]
@@ -31,10 +39,11 @@ def check_packages():
 
 check_packages()
 
+addons.enable('BlenderGIS')
 
 import pandas
 import numpy 
-import scipy
+
 import openpyxl
 
 __all__ = (

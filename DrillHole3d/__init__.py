@@ -1,4 +1,7 @@
 import bpy
+import bmesh
+import addon_utils as addons
+
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -20,8 +23,12 @@ bl_info = {
     "version" : (0, 0, 1),
     "location" : "",
     "warning" : "",
-    "category" : "3D View"
+    "category" : "3D View",
+    "addons": ["BlenderGIS"]
 }
+
+
+
 
 from . import auto_load
 

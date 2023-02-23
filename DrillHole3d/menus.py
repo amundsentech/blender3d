@@ -1,5 +1,5 @@
 import bpy
-        
+import matplotlib as mpl
 
 
 
@@ -212,7 +212,39 @@ class RenderDropDownMenu(bpy.types.Menu):
             # self.bl_label= context.scene['rendercol']
 
 
+class ColormapDropDownOperator(bpy.types.Operator):
+    bl_label = "colormap Drop-Down Operator"
+    bl_idname = "object.colormap_dropdown_operator"
 
+    option : bpy.props.StringProperty()
+
+
+    def execute(self, context):
+        
+        scene=context.scene
+        print("Selected ColorMap: ", self.option)
+        selection=self.option
+        scene['colormap']=self.option
+        ##update the headers after a seleceton
+        return {'FINISHED'}
+
+
+class ColormapDropDownMenu(bpy.types.Menu):
+    bl_label = "colormap"
+    bl_idname = "OBJECT_MT_colormap_dropdown_menu"
+
+    # Define the dropdown options
+    def draw(self, context):
+        layout = self.layout
+        
+        color_options=mpl.colormaps()
+        options= create_dropdown_options(color_options)
+
+        # Add the dropdown options to the menu
+        for item in options:
+            selection=layout.operator("object.colormap_dropdown_operator", text=item[0])
+            selection.option = item[1]
+            # self.bl_label= context.scene['z']
 
 
 '''Drop down Helper tool'''

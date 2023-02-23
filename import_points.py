@@ -19,6 +19,7 @@ with open("your file.csv") as f:
         # This sets the material to use on the sphere you just created
         material = bpy.data.materials["The name of your material aka style file"]
         bpy.context.object.data.materials.append(material)
+        sphere=bpy.context.object()
 
         # This creates the custom color value (the following example assumes range 0-100 for a percent column eg 0-100)
         bpy.context.object["color"] = float(att) / 100
