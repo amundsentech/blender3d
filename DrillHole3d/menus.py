@@ -178,6 +178,102 @@ class ZDropDownMenu(bpy.types.Menu):
             selection.option = item[1]
             # self.bl_label= context.scene['z']
 
+class DipDropDownOperator(bpy.types.Operator):
+    bl_label = "Dip Drop-Down Operator"
+    bl_idname = "object.dip_dropdown_operator"
+
+    option : bpy.props.StringProperty()
+
+
+    def execute(self, context):
+        scene=context.scene
+        print("Selected dip: ", self.option)
+        selection=self.option
+        scene['dip']=self.option
+        ##update the headers after a seleceton
+        return {'FINISHED'}
+
+
+class DipDropDownMenu(bpy.types.Menu):
+    bl_label = "Dip"
+    bl_idname = "OBJECT_MT_dip_dropdown_menu"
+
+    # Define the dropdown options
+    def draw(self, context):
+        layout = self.layout
+        
+        dropdown_items = context.scene['Headers']
+        
+        options= create_dropdown_options(dropdown_items)
+
+        # Add the dropdown options to the menu
+        for item in options:
+            selection=layout.operator("object.dip_dropdown_operator", text=item[0])
+            selection.option = item[1]
+            # self.bl_label= context.scene['z']
+
+
+class AzimuthDropDownOperator(bpy.types.Operator):
+    bl_label = "Azimuth Drop-Down Operator"
+    bl_idname = "object.azimuth_dropdown_operator"
+    option : bpy.props.StringProperty()
+
+
+    def execute(self, context):
+        scene=context.scene
+        print("Selected azimuth: ", self.option)
+        selection=self.option
+        scene['azimuth']=self.option
+        ##update the headers after a seleceton
+        return {'FINISHED'}
+
+class AzimuthDropDownMenu(bpy.types.Menu):
+    bl_label = "Azimuth"
+    bl_idname = "OBJECT_MT_azimuth_dropdown_menu"
+
+    # Define the dropdown options
+    def draw(self, context):
+        layout = self.layout
+        
+        dropdown_items = context.scene['Headers']
+        
+        options= create_dropdown_options(dropdown_items)
+
+        # Add the dropdown options to the menu
+        for item in options:
+            selection=layout.operator("object.azimuth_dropdown_operator", text=item[0])
+            selection.option = item[1]
+            # self.bl_label= context.scene['z']
+
+class VolumeDropDownOperator(bpy.types.Operator):
+    bl_label = "Hole Radius Drop-Down Operator"
+    bl_idname = "object.holeradius_dropdown_operator"
+    option : bpy.props.StringProperty()
+
+    def execute(self, context):
+        scene=context.scene
+        print("Selected holeradius: ", self.option)
+        selection=self.option
+        scene['holeradius']=self.option
+        ##update the headers after a seleceton
+        return {'FINISHED'}
+
+class VolumeDropDownMenu(bpy.types.Menu):
+    bl_label = "Hole Radius (meters)"
+    bl_idname = "OBJECT_MT_holeradius_dropdown_menu"
+
+    # Define the dropdown options
+    def draw(self, context):
+        layout = self.layout
+        dropdown_items = ['.1','.2','.5','.7','.9','1','5','10','20']
+        options= create_dropdown_options(dropdown_items)
+
+        # Add the dropdown options to the menu
+        for item in options:
+            selection=layout.operator("object.holeradius_dropdown_operator", text=item[0])
+            selection.option = item[1]
+            # self.bl_label= context.scene['z']
+
 class RenderDropDownOperator(bpy.types.Operator):
     bl_label = "RenderCol Drop-Down Operator"
     bl_idname = "object.rendercol_dropdown_operator"
@@ -211,7 +307,6 @@ class RenderDropDownMenu(bpy.types.Menu):
             selection.option = item[1]
             # self.bl_label= context.scene['rendercol']
 
-
 class ColormapDropDownOperator(bpy.types.Operator):
     bl_label = "colormap Drop-Down Operator"
     bl_idname = "object.colormap_dropdown_operator"
@@ -228,7 +323,6 @@ class ColormapDropDownOperator(bpy.types.Operator):
         ##update the headers after a seleceton
         return {'FINISHED'}
 
-
 class ColormapDropDownMenu(bpy.types.Menu):
     bl_label = "colormap"
     bl_idname = "OBJECT_MT_colormap_dropdown_menu"
@@ -238,14 +332,13 @@ class ColormapDropDownMenu(bpy.types.Menu):
         layout = self.layout
         
         color_options=mpl.colormaps()
-        options= create_dropdown_options(color_options)
+        options= create_dropdown_options(sorted(color_options))
 
         # Add the dropdown options to the menu
         for item in options:
             selection=layout.operator("object.colormap_dropdown_operator", text=item[0])
             selection.option = item[1]
             # self.bl_label= context.scene['z']
-
 
 '''Drop down Helper tool'''
 def create_dropdown_options(items):

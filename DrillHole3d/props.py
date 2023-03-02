@@ -18,6 +18,13 @@ bpy.types.Scene.Sheet_ops : bpy.props.EnumProperty(
         default=10,
     )
 
+class ColorAttributeProperty(bpy.types.PropertyGroup):
+    color_attribute: bpy.props.EnumProperty(
+        name="Color Attribute",
+        description="The name of the particle attribute to use as the color",
+        items=[],
+    )
+
 # bpy.types.Scene.Collar_col : bpy.props.EnumProperty(
 #         name="Collar_col",
 #         description="Choose Collar column",

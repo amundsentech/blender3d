@@ -34,7 +34,6 @@ class VIEW3D_PT_file_panel(bpy.types.Panel):
         row3.operator('object.load_file')
         row4.operator('object.reset_tool')
 
-
 class VIEW3D_PT_choose_sheet(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_choose_xlsx_sheet"
     bl_label = "Choose Sheet to Render"
@@ -50,7 +49,6 @@ class VIEW3D_PT_choose_sheet(bpy.types.Panel):
     
     def draw(self, context):
         scene=context.scene
-
         # Create the first dropdown box
         layout=self.layout
         layout.menu('OBJECT_MT_sheet_dropdown_menu')
@@ -80,22 +78,52 @@ class VIEW3D_PT_choose_headers(bpy.types.Panel):
         scene=context.scene
 
         box1 = layout.box()
-
-        
-
         row1 = box1.row()
 
         row1.label(text="Select XYZ,(Z_from-Z_to) and Collar Collumns:")
 
         for c in scene['render_cols']:
+            layout.label(text=f"{c.title()} Selection= " + scene[c])
             layout.menu(f'OBJECT_MT_{c}_dropdown_menu')
-            layout.label(text=f"{c} Selection= " + scene[c])
+
 
         box2 = layout.box()
         row2 = box2.row()
         row2.operator('object.render_holes')
 
+class VIEW3D_PT_change_colors(bpy.types.Panel):
+    bl_idname = "VIEW3D_PT_change_colors"
+    bl_label = "Change Colors"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Drill Hole Importer"
+    header_chosen=False
 
+    @classmethod
+    def poll(self, context):
+        # Only display the panel if the property is set to True
+        return context.scene.get("show_color_panel", False)
+
+
+    def draw(self, context):
+        # Create the first dropdown box
+        layout=self.layout
+        scene=context.scene
+
+        box1 = layout.box()
+        row1 = box1.row()
+
+        row1.label(text="Select XYZ,(Z_from-Z_to) and Collar Collumns:")
+
+        for c in scene['render_cols']:
+            if c in ['rendercol','colormap']:
+                layout.label(text=f"{c.title()} Selection= " + scene[c])
+                layout.menu(f'OBJECT_MT_{c}_dropdown_menu')
+
+
+        box2 = layout.box()
+        row2 = box2.row()
+        row2.operator('object.render_holes')
         
 
     # def update_callback(self, context):

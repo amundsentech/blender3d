@@ -54,3 +54,65 @@ class BaseDropDownOperator(bpy.types.Operator):
         scene['rendercol']=self.option
         ##update the headers after a seleceton
         return {'FINISHED'}
+
+class EXAMPLE_OT_modal_operator(bpy.types.Operator): 
+    
+    bl_idname = "example.modal_operator"
+    bl_label = "Modal Operator"
+    
+    def __init__(self):
+        
+        self.step = 0
+        self.timer = None
+        self.done = False
+        self.max_step = None
+        
+        self.timer_count = 0 #timer count, need to let a little bit of space between updates otherwise gui will not have time to update
+                
+    def modal(self, context, event):
+        
+        global Operations
+        
+        #update progress bar
+        if not self.done:
+            print(f"Updating: {self.step+1}/{self.max_step}")
+            #update progess bar
+            context.object.progress = ((self.step+1)/(self.max_step))*100
+            #update label
+            context.object.progress_label = list(Operations.keys())[self.step]
+            #send update signal
+            context.area.tag_redraw()
+            
+            
+        #by running a timer at the same time of our modal operator
+        #we are guaranteed that update is done correctly in the interface
+        
+        if event.type == 'TIMER':
+            
+            #but wee need a little time off between timers to ensure that blender have time to breath, so we have updated inteface
+            self.timer_count +=1
+            if self.timer_count==10:
+                self.timer_count=0
+                
+                if self.done:
+                    
+                    print("Finished")
+                    self.step = 0
+                    context.object.progress = 0
+                    context.window_manager.event_timer_remove(self.timer)
+                    context.area.tag_redraw()
+                    
+                    return {'FINISHED'}
+            
+                if self.step < self.max_step:
+                        
+                    #run step function
+                    list(Operations.values())[self.step]()
+                    
+                    self.step += 1
+                    if self.step==self.max_step:
+                        self.done=True
+                    
+                    return {'RUNNING_MODAL'}
+        
+        return {'RUNNING_MODAL'}
