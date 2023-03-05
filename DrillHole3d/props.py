@@ -24,6 +24,13 @@ class ColorAttributeProperty(bpy.types.PropertyGroup):
         description="The name of the particle attribute to use as the color",
         items=[],
     )
+class VertexColorProperty(bpy.types.PropertyGroup):
+    color: bpy.props.FloatVectorProperty(name="Color", size=4, default=[1.0, 1.0, 1.0, 1.0])
+# Add the custom property to the LayerObjects property group
+layer_objects = bpy.types.LayerObjects
+if not hasattr(layer_objects, "color_props"):
+    layer_objects.color_props = bpy.props.CollectionProperty(type=VertexColorProperty)
+
 
 # bpy.types.Scene.Collar_col : bpy.props.EnumProperty(
 #         name="Collar_col",

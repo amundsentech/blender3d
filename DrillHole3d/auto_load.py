@@ -38,6 +38,8 @@ def check_packages():
     return
 
 check_packages()
+# subprocess.call([sys.executable, '-m', 'pip', 'install', '--force-reinstal','-v', "openpyxl==3.1.0"])
+
 
 addons.enable('BlenderGIS')
 
