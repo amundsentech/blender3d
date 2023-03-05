@@ -116,11 +116,11 @@ class VIEW3D_PT_render_holes(bpy.types.Panel):
         layout=self.layout
         scene=context.scene
 
-        box1 = layout.box()
-        row1 = box1.row()
+
         for c in scene['colorrenders']:
             layout.label(text=f"{c.title()} Selection= " + scene[c])
             layout.menu(f'OBJECT_MT_{c}_dropdown_menu')
-
+        box1 = layout.box()
+        row1 = box1.row()
         row1.operator('object.render_holes')
 

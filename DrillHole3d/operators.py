@@ -32,14 +32,14 @@ class LoadFileOperator(bpy.types.Operator):
         scene['colormap']='None'
 
         scene['render_cols']=['Collar','x','y','z','rendercol','colormap']
-        scene['colorrenders']=['rendercol','colormap']
+        scene['colorrenders']=['rendercol','colormap','holeradius']
 
         scene['InterpHeaders']=['LocationHeaders','SurveyHeaders','DataHeaders']
         scene['InterpData']=['LocationData','SurveyData','DataData']
         scene['interp_sheets']=['location_sheet','survey_sheet','data_sheet']
 
         ## columns from the three drill hole data files that we would need to merge
-        scene['location_cols']=['locationcollars','x','y','z','holeradius']
+        scene['location_cols']=['locationcollars','x','y','z']
         scene['survey_cols']=['surveycollars','surveydepths','dip','azimuth']
         scene['data_cols']=['datacollars','datadepths']
 
@@ -333,7 +333,7 @@ class RenderOperator(bpy.types.Operator):
 
         for c in color_cols:
             print(c)
-            data[c]=(data[c]-data[c].mean())/data[c].std()
+            # data[c]=(data[c]-data[c].mean())/data[c].std()
             max=data[c].max()
             min=data[c].min()
             self.colormaps[c]=MplColorHelper(cmap_name=cmap,start_val=min,stop_val=max)
@@ -628,11 +628,9 @@ class RenderOperator(bpy.types.Operator):
         gpencil = bpy.data.objects.new(gpencil_data.name, gpencil_data)
         collection.objects.link(gpencil)
         bar=tqdm(range(len(self.color_cols)))
-        bar.set_description(f'Processing {name} Color Attr table')
+        
 
         for c in [self.render_col]:
-
-            bar.update(1)
             color_layer = gpencil_data.layers.new(f'{name} {c}')
             gp_frame = color_layer.frames.new(bpy.context.scene.frame_current)
             gp_stroke = gp_frame.strokes.new()
@@ -669,6 +667,10 @@ class RenderOperator(bpy.types.Operator):
 
         curve_obj=bpy.data.objects.new(f'{name}', curve)
         collection.objects.link(curve_obj)
+        # curve_obj.data.extrude = 1
+        curve_obj.data.use_path_follow=True
+        curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
+        curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
         curve_obj.data.dimensions='3D'
         curve_obj.data.bevel_mode='ROUND'
         curve_obj.data.bevel_depth = radius
@@ -678,7 +680,6 @@ class RenderOperator(bpy.types.Operator):
         curve_mesh=self.convert_curve_to_mesh(curve_obj,name=name)
         # spline=self.generate_spline(coords=coords,curve=curve_obj.data)
         for gp_layer in  gpencil_data.layers:
-            print(dir(gp_layer.frames))
             print((gp_layer.frames))
 
             # Create a new material for the curve data and set up the shader nodes
@@ -748,11 +749,16 @@ class RenderOperator(bpy.types.Operator):
 
     def color_mesh(self,points, mesh_obj,color_name):
         print('######## collor_mesh faces ########')
+
+
         bm=bmesh.new()
         bm.from_mesh(mesh_obj.data)
         uv_layer =bm.loops.layers.uv.new(f"{color_name} UV")
+        bar=tqdm(range(len(bm.faces)))
+        bar.set_description(f'Processing {color_name} Color Attr Faces')
 
         for face in bm.faces:
+            bar.update(1)
             min_dist=np.inf
             for i,point in enumerate(points):
                 gp_pos = mesh_obj.matrix_world @ point.co
