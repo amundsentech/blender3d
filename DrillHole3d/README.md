@@ -20,7 +20,7 @@ The three sheets should have the following formats:
 
 ### Sheet 1: UTM Georeferenced Locations
 
-| hole_id | x_utm | y_utm | Z_elevation |
+| hole_id | x_utm | y_utm | z_elevation |
 |---------|-------|-------|-------|
 | hole_1  | 12345 | 67890 | 1200  |
 | hole_2  | 23456 | 78901 | 1300  |
@@ -63,5 +63,6 @@ If your file if in multiple sheets choose the multple files button and vice vers
 
 You will be prompted to choose the columns from each sheet or your single sheet that contain the relevant data.
 
-Finally, choose the Data coloumn that you would like to see colored in the viewport and click the "Render Drill Holes" Button button to render the data.
+Finally, choose the columns that you would like to see colored in the viewport ,the color map you would like to use and radius of the drill hole then click the "Render Drill Holes" Button button to render the data.
 
+If you wuld like to change the colors of the data you are viewing simply change the column and click the "Render Drill Holes" Button again.
