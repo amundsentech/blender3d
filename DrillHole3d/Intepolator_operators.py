@@ -119,7 +119,7 @@ class BuildHolesOperator(bpy.types.Operator):
             data=pd.merge(group,surv,left_on=[data_z_col],right_on=[survey_depth_col],how = 'left',
                                                                                         suffixes=('', '_delme')  # Left gets no suffix, right gets something identifiable
                                                                                         )
-            data = data[[c for c in data.columns if not c.endswith('_delme')]]
+            # data = data[[c for c in data.columns if not c.endswith('_delme')]]
             data[[azi_col,dip_col]]=data[[azi_col,dip_col]].fillna(method='ffill').fillna(method='bfill')
             drop=data[data[data_collar_col].isna()].index
             data=data.drop(drop).fillna(0).reset_index(drop=True)
@@ -136,7 +136,6 @@ class BuildHolesOperator(bpy.types.Operator):
 
             # grab starting depth
             print('###### Merged_data #####')
-            print(data)
             last_depth=data.loc[0,data_z_col]
 
             data.loc[0,x_col]=start_x
@@ -174,8 +173,10 @@ class BuildHolesOperator(bpy.types.Operator):
             drill_data.append(data)
         
 
-        drill_holes=pd.concat(drill_data).reset_index(drop=True)
+        drill_holes=pd.concat(drill_data,axis=0).reset_index(drop=True)
         print('DRILL HOLES')
+        print(drill_holes.columns)
+
         print(drill_holes)
         scene['HoleData']=drill_holes.to_json()
         scene['Headers']=drill_holes.columns

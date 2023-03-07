@@ -253,6 +253,7 @@ class RenderOperator(bpy.types.Operator):
         self.color_cols=[]
         self.colormaps={}
         self.render_col=''
+        self.volume=1
                 
     def execute(self, context):
         # print (dir(bpy.ops.bgis))
@@ -269,6 +270,8 @@ class RenderOperator(bpy.types.Operator):
             selection_options.append(scene[x])
         data=scene['HoleData']
         data = pd.read_json(data)
+        print('####### data columns #########')
+        print(data.columns)
         # print(data)
         #grab corindates from specified columns
         cord_cols=[scene['x'],scene['y'],scene['z']]
@@ -285,7 +288,7 @@ class RenderOperator(bpy.types.Operator):
 
         ### grab the data columns
         collar_col=scene['collar']
-        volume=scene['holeradius']
+        self.volume=int(scene['holeradius'])
         self.render_col=scene['rendercol']
 
 
@@ -301,7 +304,7 @@ class RenderOperator(bpy.types.Operator):
 
         print('Selected_options',selection_options)
         print('XYZ=',cord_cols)
-        print('hole_size :',volume)
+        print('hole_size :',self.volume)
         # scene['show_data_panel']=False
         # scene['show_sheet_panel']=False
 
@@ -330,10 +333,11 @@ class RenderOperator(bpy.types.Operator):
 
 
 
-
+        color_cols.append(self.render_col)
         for c in color_cols:
             print(c)
-            # data[c]=(data[c]-data[c].mean())/data[c].std()
+            data[c]=pd.to_numeric(data[c],errors='coerce').fillna(0)
+
             max=data[c].max()
             min=data[c].min()
             self.colormaps[c]=MplColorHelper(cmap_name=cmap,start_val=min,stop_val=max)
@@ -347,9 +351,9 @@ class RenderOperator(bpy.types.Operator):
         else:
             collection_name=scene['file_path'].split('/')[-1]
 
-        sheet_collection = bpy.data.collections.new(collection_name)
-        bpy.context.scene.collection.children.link(sheet_collection)
-        
+        sheet_collection = self.get_collection(name=collection_name)
+        try:bpy.context.scene.collection.children.link(sheet_collection)
+        except:pass
         groups=data.groupby(collar_col)
         
         ## lop through all the drill holes
@@ -364,8 +368,10 @@ class RenderOperator(bpy.types.Operator):
             self.clear_old_hole(name=collar_name)
 
             #### add a new collection to store the spheres
-            collar_collection = bpy.data.collections.new(f'{collar_name}')
-            sheet_collection.children.link(collar_collection)
+            collar_collection = self.get_collection(name=collar_name)
+
+            try:sheet_collection.children.link(collar_collection)
+            except:pass
 
             
             ## grab the cords from the data
@@ -373,18 +379,19 @@ class RenderOperator(bpy.types.Operator):
 
             coords=self.get_cords(cord_data)
 
-            # # # ake one big tube. Takes to long to color
-            # hole_curve=self.make_one_big_hole(name=collar_name,
-            #                                 coords=coords,
-            #                                 volume=volume,
-            #                                 collar_collection=collar_collection,
-            #                                 )
-            gpencil=self.generate_pencil_stroke(data=group,
+            # # ake one big tube. Takes to long to color
+            hole_mesh=self.make_one_big_hole(
+                                            name=collar_name,
+                                            coords=coords,
+                                            collar_collection=collar_collection,
+                                            )
+            gpencil=self.generate_pencil_stroke(
+                                                data=group,
                                                 coords=coords,
-                                                radius=volume,
                                                 name=collar_name,
                                                 collection=collar_collection)
-
+            
+            self.color_mesh(gpencil=gpencil,mesh_obj=hole_mesh,color_name=self.render_col)
 
 
         print('--------------------------------')
@@ -529,7 +536,6 @@ class RenderOperator(bpy.types.Operator):
     
     def create_shape_keys(self,obj,data,coords):
 
-
         for i, row in data.iterrows():
             print(dir(obj.data))
             shape_key=obj.data.shape_keys(f'sample_{i}')
@@ -564,46 +570,37 @@ class RenderOperator(bpy.types.Operator):
                 obj.data.update()
         return obj
 
-    def make_tube(self,curve_obj,name,coords,radius,collar_collection):
+    def make_tube(self,curve_obj,name,coords,collar_collection):
         print('######## MAKE TUBE ########')
-        print(dir(curve_obj.data))
+
+
         # Create a tube that follows the curve
-
-        bpy.ops.curve.primitive_bezier_circle_add(radius=radius, location=coords[0],enter_editmode=True, align='WORLD')
-
+        bpy.ops.curve.primitive_bezier_circle_add(radius=self.volume, location=coords[0],enter_editmode=True, align='WORLD')
         circle=bpy.data.objects["BezierCircle"].copy()
         circle.name=f'{name}_start'
         collar_collection.objects.link(circle)
+
         bpy.context.view_layer.objects.active = circle
 
         circle_obj = bpy.data.objects.new(name=name, object_data=circle.data)
 
-        # curve_obj.data.bevel_object = circle
+        curve_obj.data.bevel_object = circle
         curve_obj.data.dimensions='3D'
-
-
-        # curve_obj.data.extrude = 1
         curve_obj.data.bevel_mode='ROUND'
         curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
         curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
-        curve_obj.data.bevel_depth = radius
+        curve_obj.data.bevel_depth = self.volume
         curve_obj.data.bevel_resolution = 2
-        # circle.data.use_stretch=True
         curve_obj.data.use_path_follow=True
-        # circle.data.use_path_clamp=True
 
-        # print(dir(curve_obj))
+
+
         collar_collection.objects.link(curve_obj)
         bpy.context.view_layer.objects.active=curve_obj
-        # bpy.ops.curve.select_all(action='Select')
-        # bpy.ops.curve.split()
+        circle.parent=curve_obj
 
-        # hole_mesh=curve_obj.to_mesh().copy()
-       
-        # hole_mesh.update()
-        # bpy.data.objects.remove(curve_obj)
+        return curve_obj
 
-        return circle,curve_obj
 
     def generate_spline(self,coords,curve):
         print('######## GENERATE SPLINE ########')
@@ -621,7 +618,7 @@ class RenderOperator(bpy.types.Operator):
         return spline
 
 
-    def generate_pencil_stroke(self,data,coords,radius,name,collection):
+    def generate_pencil_stroke(self,data,coords,name,collection):
         print('######## GENERATE GPENCIL ########')
         gpencil_data = bpy.data.grease_pencils.new(name)
         # print(dir(gpencil_data))
@@ -629,12 +626,11 @@ class RenderOperator(bpy.types.Operator):
         collection.objects.link(gpencil)
         bar=tqdm(range(len(self.color_cols)))
         
-
         for c in [self.render_col]:
             color_layer = gpencil_data.layers.new(f'{name} {c}')
             gp_frame = color_layer.frames.new(bpy.context.scene.frame_current)
             gp_stroke = gp_frame.strokes.new()
-            gp_stroke.line_width = int(radius)
+            gp_stroke.line_width = int(self.volume)*10
             gp_stroke.start_cap_mode = 'FLAT'
             gp_stroke.end_cap_mode = 'FLAT'
 
@@ -652,7 +648,7 @@ class RenderOperator(bpy.types.Operator):
                 gp_stroke.points[0].vertex_color
                 coord=coords[i]
                 gp_stroke.points[i].co=coord
-                gp_stroke.points[i].pressure=int(radius)
+                gp_stroke.points[i].pressure=int(self.volume)*10
                 gp_stroke.points[i].vertex_color=colors
 
             mat = bpy.data.materials.new(name=f"{name}_{c}_colors")
@@ -660,31 +656,32 @@ class RenderOperator(bpy.types.Operator):
             gpencil.data.materials.append(mat)
 
         bpy.context.view_layer.objects.active = gpencil
-        bpy.ops.gpencil.convert(type='CURVE', use_timing_data=False)
+        # bpy.ops.gpencil.convert(type='CURVE', use_timing_data=False)
         
-        curve = bpy.data.curves[-1]
-        curve.name=f'{name}_hole'
+        # curve = bpy.data.curves[-1]
+        # curve.name=f'{name}_hole'
 
-        curve_obj=bpy.data.objects.new(f'{name}', curve)
-        collection.objects.link(curve_obj)
-        # curve_obj.data.extrude = 1
-        curve_obj.data.use_path_follow=True
-        curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
-        curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
-        curve_obj.data.dimensions='3D'
-        curve_obj.data.bevel_mode='ROUND'
-        curve_obj.data.bevel_depth = radius
-        curve_obj.data.bevel_resolution = 2
+        # curve_obj=bpy.data.objects.new(f'{name}', curve)
+        # collection.objects.link(curve_obj)
+        # # curve_obj.data.extrude = 1
+        # curve_obj.data.use_path_follow=True
+        # curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
+        # curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
+        # curve_obj.data.dimensions='3D'
+        # curve_obj.data.bevel_mode='ROUND'
+        # curve_obj.data.bevel_depth = radius
+        # curve_obj.data.bevel_resolution = 2
 
 
-        curve_mesh=self.convert_curve_to_mesh(curve_obj,name=name)
+        # curve_mesh=self.convert_curve_to_mesh(curve_obj,name=name)
         # spline=self.generate_spline(coords=coords,curve=curve_obj.data)
-        for gp_layer in  gpencil_data.layers:
-            print((gp_layer.frames))
 
-            # Create a new material for the curve data and set up the shader nodes
-            self.color_mesh(points=gp_layer.frames[0].strokes[0].points, mesh_obj=curve_mesh,color_name=name)
-        collection.objects.link(curve_mesh)
+        # for gp_layer in  gpencil_data.layers:
+        #     print((gp_layer.frames))
+
+        #     # Create a new material for the curve data and set up the shader nodes
+        #     self.color_mesh(points=gp_layer.frames[0].strokes[0].points, mesh_obj=curve_mesh,color_name=name)
+        # # collection.objects.link(curve_mesh)
 
 
         # curve_obj.data.materials.active=f'{name}_{self.render_col}'
@@ -695,9 +692,9 @@ class RenderOperator(bpy.types.Operator):
         return gpencil
 
 
-    def make_one_big_hole(self,name,coords,volume,collar_collection):
-        # create the path for the drill hole to follow
+    def make_one_big_hole(self,name,coords,collar_collection):
 
+        # create the path for the drill hole to follow
         print('######## BUILD HOLE ########')
         curve= bpy.data.curves.new(name=name, type='CURVE',)
         spline=self.generate_spline(coords,curve,)
@@ -706,19 +703,17 @@ class RenderOperator(bpy.types.Operator):
         curve_obj = bpy.data.objects.new(f"{name}_path", curve.copy())
 
         # use a circle as the bevel object and generate a tube along the path
-        circle,curve_obj=self.make_tube(curve_obj=curve_obj,name=name,coords=coords,radius=volume,collar_collection=collar_collection)
+        curve_obj=self.make_tube(curve_obj=curve_obj,name=name,coords=coords,collar_collection=collar_collection)
+        
         ## parent stuff so they are organized      
-
-        circle.parent=curve_obj
         curve_mesh=self.convert_curve_to_mesh(curve_obj=curve_obj,name=name)
         curve_mesh.parent=curve_obj
 
-
         collar_collection.objects.link(curve_mesh)
+        bpy.data.objects.remove(curve_obj)
 
+        return curve_mesh
 
-
-        return curve_obj
 
     def check_context(self,func):
         old_area=self.context.area.type
@@ -738,6 +733,7 @@ class RenderOperator(bpy.types.Operator):
 
             except Exception as e: print(e)
 
+
     def make_uvmap(self,obj,name):
         uv_map_name = f"{name} UVMap"
         uv_map = obj.data.uv_layers.new(name=uv_map_name)
@@ -747,13 +743,18 @@ class RenderOperator(bpy.types.Operator):
         bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0.001)
         return obj
 
-    def color_mesh(self,points, mesh_obj,color_name):
-        print('######## collor_mesh faces ########')
 
+    def color_mesh(self,gpencil, mesh_obj,color_name):
+        print('######## collor_mesh faces ########')
+        gpencil_data=gpencil.data
+        gp_layer = gpencil_data.layers[0]
+        gp_frame=gp_layer.frames[0]
+        gp_strokes=gp_frame.strokes[0]
+        points=gp_strokes.points
 
         bm=bmesh.new()
         bm.from_mesh(mesh_obj.data)
-        uv_layer =bm.loops.layers.uv.new(f"{color_name} UV")
+
         bar=tqdm(range(len(bm.faces)))
         bar.set_description(f'Processing {color_name} Color Attr Faces')
 
@@ -768,7 +769,7 @@ class RenderOperator(bpy.types.Operator):
                     samp_index=i
                     closest_point = point
                     min_dist = dist
-            mat_name=f'{color_name} Sample {samp_index}'
+            mat_name=f'{mesh_obj.name} Sample {samp_index} {color_name}'
 
             if mat_name not in bpy.data.materials:
                 mat = bpy.data.materials.new(mat_name)
@@ -777,14 +778,10 @@ class RenderOperator(bpy.types.Operator):
                 mesh_obj.data.update()
 
             mat_index=mesh_obj.data.materials.find(mat_name)
-
-
             face.material_index = mat_index
 
-
-
         bm.to_mesh(mesh_obj.data)
-        mesh_obj.data.update
+        mesh_obj.data.update()
 
     def convert_curve_to_mesh(self,curve_obj,name):
 
@@ -795,9 +792,9 @@ class RenderOperator(bpy.types.Operator):
         bm = bmesh.new()
         tmpMesh = bpy.data.meshes.new(f'{name}_mesh')
 
-        bm .from_mesh(obj_eval)
+        bm.from_mesh(obj_eval)
         bm.to_mesh(tmpMesh)       
-        curve_mesh=bpy.data.objects.new(f"{name}_path_mesh", tmpMesh)
+        curve_mesh=bpy.data.objects.new(f"{name}", tmpMesh)
         
         bm.transform(curve_obj.matrix_world)
 
@@ -832,12 +829,7 @@ class RenderOperator(bpy.types.Operator):
         
         curve_obj.data.materials.append(mat)
 
-    def clear_old_hole(self, name):
-
-            # find all the collections and remove them
-        # collection_names = [col.name for col in bpy.data.collections]
-        # for name in collection_names:
-        #     bpy.data.collections.remove(bpy.data.collections[name])
+    def clear_old_hole(self, name,):
 
         for mat in bpy.data.grease_pencils:
             if name in mat.name:
@@ -857,6 +849,18 @@ class RenderOperator(bpy.types.Operator):
         for mesh in bpy.data.meshes:
             if name in mesh.name:
                 bpy.data.meshes.remove(bpy.data.meshes[mesh.name])
+
+    def get_collection(self,name):
+            # find all the collections and remove them
+        collection_names = [col.name for col in bpy.data.collections]
+        if name in collection_names:
+            collection=bpy.data.collections[name]
+        else :
+            collection = bpy.data.collections.new(name)
+
+        return collection
+
+
 
 class ColorOperator(bpy.types.Operator):
 
