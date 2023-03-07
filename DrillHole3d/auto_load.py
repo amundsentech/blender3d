@@ -9,7 +9,7 @@ from importlib.metadata import version
 from pathlib import Path
 import subprocess
 
-import Interpolater
+from .Interpolater import *
 
 import addon_utils as addons
 

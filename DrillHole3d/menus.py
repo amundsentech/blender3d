@@ -135,7 +135,7 @@ class VolumeDropDownMenu(bpy.types.Menu):
     # Define the dropdown options
     def draw(self, context):
         layout = self.layout
-        dropdown_items = ['.1','.2','.3','.4','.5','.6','.7','.8','.9','1']
+        dropdown_items = ['.1','.2','.3','.4','.5','.6','.7','.8','.9','1','2','3','4','5','10']
         options= create_dropdown_options(dropdown_items)
 
         # Add the dropdown options to the menu

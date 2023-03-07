@@ -108,9 +108,9 @@ class BuildHolesOperator(bpy.types.Operator):
         data_z_col=scene['datadepths']
 
         drill_data=[]
-        for name,group in target_data.groupby('Hole ID'):
+        for name,group in target_data.groupby(data_collar_col):
             surv=survey[survey[survey_collar_col]==name].reset_index(drop=True)
-            start_data=collars[collars[data_collar_col]==name].reset_index(drop=True)
+            start_data=collars[collars[location_collar_col]==name].reset_index(drop=True)
             for i in surv[survey_depth_col].values:
                 group.loc[-1,data_z_col]=i
                 group=group.reset_index(drop=True)

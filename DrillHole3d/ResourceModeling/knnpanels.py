@@ -3,7 +3,7 @@ import bpy
 
 class VIEW3D_PT_file_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_file_panel"
-    bl_label = "File Import"
+    bl_label = "Connect Dill_Hole"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Resource Modeling"
@@ -22,7 +22,7 @@ class VIEW3D_PT_file_panel(bpy.types.Panel):
         row3 = box3.row()
         row4 = box4.row()
 
-        row1.label(text="File Path: .csv or .xlsx")
+        row1.label(text="Drill Hole Collection: ")
 
         # second row to allow for  choosing the file path
         row2.prop(context.scene, "file_path")
