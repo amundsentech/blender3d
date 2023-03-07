@@ -5,7 +5,7 @@ This repository contains a blender add on that can be used to visualize Drill Ho
 ## File Type Option 1: XYZ Coordinates
 
 The XYZ coordinates file contains data points in the form of x, y, and z coordinates. The file should have the following format:
-| hole_id | x_utm | y_utm | Z_elevation | copper | gold   |
+| hole_id | x_utm | y_utm | z_elevation | copper | gold |
 |---------|-------|-------|-------      | 10.0   |   0.5  |
 | hole_1  | 12345 | 67890 | 1200        | 9.0    |   0.1  |
 | hole_2  | 23456 | 78901 | 1300        | 8.0    |   0.0  |
