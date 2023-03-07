@@ -5,8 +5,12 @@ import typing
 import inspect
 import pkgutil
 import importlib
+from importlib.metadata import version
 from pathlib import Path
 import subprocess
+
+import Interpolater
+
 import addon_utils as addons
 
 pkgs = {'pandas': 'pd',
@@ -18,6 +22,8 @@ pkgs = {'pandas': 'pd',
 #  'GDAL':'GDAL',
  'matplotlib':'matplotlib'
  }
+
+
 def check_packages():
     for p in pkgs:
         s = pkgs[p]
@@ -38,8 +44,17 @@ def check_packages():
     return
 
 check_packages()
-# subprocess.call([sys.executable, '-m', 'pip', 'install', '--force-reinstal','-v', "openpyxl==3.1.0"])
 
+def check_xl_version():
+    xl=version('openpyxl')
+    xl.split('.')
+    vers=xl.split('.')
+    vers=[int(v) for v in vers]
+    if  vers[0]!=3 and vers[1]!=1 and vers[-1]!=0 :
+        print(xl,'wrong version')
+        subprocess.call([sys.executable, '-m', 'pip', 'install', '--force-reinstall','-v', "openpyxl==3.1.0"])
+
+check_xl_version()
 
 addons.enable('BlenderGIS')
 
