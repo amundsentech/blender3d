@@ -99,7 +99,7 @@ class VIEW3D_PT_choose_sheet(bpy.types.Panel):
         row=box.row()
         row.operator('object.get_columns')
 
-class VIEW3D_PT_choose_headers(bpy.types.Panel):
+class VIEW3D_PT_choose_columns(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_choose_columns"
     bl_label = "Choose Columns"
     bl_space_type = 'VIEW_3D'
@@ -121,7 +121,8 @@ class VIEW3D_PT_choose_headers(bpy.types.Panel):
         box1 = layout.box()
         row1 = box1.row()
 
-        row1.label(text="Select XYZ,(Z_from-Z_to) and Collar Collumns:")
+        row1.label(text="Select XYZ and Collar Columns:")
+        # print(scene['render_cols'])
 
         for c in scene['render_cols']:
             layout.label(text=f"{c.title()} Selection= " + scene[c])

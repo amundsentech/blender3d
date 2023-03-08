@@ -26,12 +26,11 @@ class LoadFileOperator(bpy.types.Operator):
         scene['Data_dir']=None
         scene['Header_dir']=None
         scene['Headers']=None
-        scene['sheet_selection']=None
+        scene['sheet_selection']='None'
         scene['HoleData']=None
-        scene['rendercol']='None'
-        scene['colormap']='None'
 
-        scene['render_cols']=['Collar','x','y','z','rendercol','colormap']
+
+        scene['render_cols']=['collar','x','y','z','rendercol','colormap','holeradius']
         scene['colorrenders']=['rendercol','colormap','holeradius']
 
         scene['InterpHeaders']=['LocationHeaders','SurveyHeaders','DataHeaders']
@@ -58,9 +57,6 @@ class LoadFileOperator(bpy.types.Operator):
                 scene[x]='None'
 
 
-
-        ## collumns from the we need for a single file to be merged
-        scene['render_cols']=['collar','x','y','z','holeradius']
         scene['color_cols']=['rendercol','colormap']
 
         for x in scene['render_cols']:
@@ -127,11 +123,15 @@ class ChooseSingleFileOperator(bpy.types.Operator):
         print('########## MAKE COLUMN DROP DOWN ##########')
         # Set the custom property to the value entered by the user
         scene=context.scene
+
         if scene['Headers']!=None:
             scene['show_data_panel']=True
             
         if scene['Sheet_names']!=None:
             scene['show_sheet_panel']=True
+
+        scene['choose_adventure_panel']=False
+    
         return {'FINISHED'}
 
 
@@ -166,10 +166,12 @@ class ChooseColumnsOperator(bpy.types.Operator):
     bl_label = "Choose Header Columns" 
 
     def execute(self,context):
-        print('########## MAKE COLUMN DROP DOWN ##########')
+        print('########## MAKE RENDERING DROP DOWNS DOWN ##########')
         # Set the custom property to the value entered by the user
 
         context.scene['show_data_panel']=True
+        context.scene['choose_adventure_panel']=False
+
         return {'FINISHED'}
 
 
@@ -183,6 +185,8 @@ class ChooseSheetOperator(bpy.types.Operator):
 
         scene=context.scene
         sheet_names=scene['Sheet_names']
+        scene['choose_adventure_panel']=False
+
         return {'FINISHED'}
 
 
@@ -198,24 +202,20 @@ class ResetOperator(bpy.types.Operator):
         scene['Sheet_names']=None
         scene['Data_dir']=None
         scene['Header_dir']=None
-        scene['render_cols']=['Collar','x','y','z','rendercol']
+
         scene['show_data_panel']=False
         scene['show_sheet_panel']=False
         scene["show_interp_panel"]=False
         scene["show_render_panel"]=False
         scene['choose_adventure_panel']=False
         scene['show_color_panel']=False
-        
-        scene['render_cols']=['Collar','x','y','z','rendercol']
 
         scene['InterpHeaders']=['LocationHeaders','SurveyHeaders','DataHeaders']
         scene['InterpData']=['LocationData','SurveyData','DataData']
         scene['interp_sheets']=['location_sheet','survey_sheet','data_sheet']
 
         ## columns from the three drill hole data files that we would need to merge
-        scene['location_cols']=['locationcollars','x','y','z','holeradius']
-        scene['survey_cols']=['surveycollars','surveydepths','dip','azimuth']
-        scene['data_cols']=['datacollars','datadepths']
+
 
         data_vars=[
             scene['InterpHeaders'],scene['InterpData']
@@ -290,10 +290,11 @@ class RenderOperator(bpy.types.Operator):
         ### grab the data columns
         collar_col=scene['collar']
         self.volume=int(scene['holeradius'])
+
+        if scene['rendercol']=='None':
+            scene['rendercol']=scene['z']
         self.render_col=scene['rendercol']
 
-
-        
         # rot_cols=[scene['dip'],scene['azimuth']]
         ## drop na depths and locations
         data=self.drop_bad_rows(data=data,cols=cord_cols
@@ -330,7 +331,7 @@ class RenderOperator(bpy.types.Operator):
         print(num_cols)
         cmap=scene['colormap']
         if cmap=='None':
-            cmap='coolwarm'
+            cmap='jet'
 
 
         self.color_data=data.copy()
@@ -389,20 +390,22 @@ class RenderOperator(bpy.types.Operator):
 
             coords=self.get_cords(cord_data)
 
-            # # ake one big tube. Takes to long to color
+            # # make one big tube. Takes to long to color
             hole_mesh=self.make_one_big_hole(
                                             name=collar_name,
                                             coords=coords,
                                             collar_collection=collar_collection,
                                             )
+            
             gpencil=self.generate_pencil_stroke(
                                                 data=group,
                                                 coords=coords,
                                                 name=collar_name,
                                                 collection=collar_collection)
-            
-            self.color_mesh(gpencil=gpencil,mesh_obj=hole_mesh,color_name=self.render_col)
-
+                                                
+            self.create_color_attrs(hole_obj=hole_mesh)
+            mesh_obj=self.color_mesh(gpencil=gpencil,mesh_obj=hole_mesh,color_name=self.render_col)
+        self.clear_circles()
 
         print('--------------------------------')
         print('Finished Render')
@@ -555,7 +558,7 @@ class RenderOperator(bpy.types.Operator):
             shape_key.value=(i/len(coords))
         return obj
 
-    def create_color_attrs(self,hole_obj,data):
+    def create_color_attrs(self,hole_obj):
         print('######## CREATE COLOR ATTRIBUTES########')
 
         for obj in hole_obj.children:
@@ -568,7 +571,7 @@ class RenderOperator(bpy.types.Operator):
                     color_layer =obj.data.color_attributes.new(name=f'{c}_color',type='FLOAT_COLOR',domain='POINT')
                     try:
                         ## update the attributes 
-                        bar=tqdm(data.iterrows())
+                        bar=tqdm(self.color_datadata.iterrows())
                         for i,row in bar:
                             val=row[c]  
                             if val==np.nan:
@@ -578,7 +581,7 @@ class RenderOperator(bpy.types.Operator):
                 
                     except Exception as e : print(f'Exception:{c}',e)
                 obj.data.update()
-        return obj
+        return hole_obj
 
     def make_tube(self,curve_obj,name,coords,collar_collection):
         print('######## MAKE TUBE ########')
@@ -597,6 +600,7 @@ class RenderOperator(bpy.types.Operator):
         curve_obj.data.bevel_object = circle
         curve_obj.data.dimensions='3D'
         curve_obj.data.bevel_mode='OBJECT'
+        curve_obj.data.bevel_mode='ROUND'
         curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
         curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
         curve_obj.data.bevel_depth = self.volume
@@ -718,13 +722,15 @@ class RenderOperator(bpy.types.Operator):
         
         ## parent stuff so they are organized      
         curve_mesh=self.convert_curve_to_mesh(curve_obj=curve_obj,name=name)
-        curve_mesh.parent=curve_obj
+
 
         collar_collection.objects.link(curve_mesh)
-        # bpy.data.objects.remove(curve_obj)
+
+        # curve_mesh.parent=curve_obj
+
+        bpy.data.objects.remove(curve_obj)
 
         return curve_mesh
-
 
     def check_context(self,func):
         old_area=self.context.area.type
@@ -744,7 +750,6 @@ class RenderOperator(bpy.types.Operator):
 
             except Exception as e: print(e)
 
-
     def make_uvmap(self,obj,name):
         uv_map_name = f"{name} UVMap"
         uv_map = obj.data.uv_layers.new(name=uv_map_name)
@@ -753,7 +758,6 @@ class RenderOperator(bpy.types.Operator):
         obj.data.mesh.uv_layers.active = uv_map
         bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0.001)
         return obj
-
 
     def color_mesh(self,gpencil, mesh_obj,color_name):
         print('######## collor_mesh faces ########')
@@ -765,6 +769,7 @@ class RenderOperator(bpy.types.Operator):
 
         bm=bmesh.new()
         bm.from_mesh(mesh_obj.data)
+        print(f'######## {len(bm.faces)} Faces ########')
 
         bar=tqdm(range(len(bm.faces)))
         bar.set_description(f'Processing {color_name} Color Attr Faces')
@@ -793,10 +798,11 @@ class RenderOperator(bpy.types.Operator):
 
         bm.to_mesh(mesh_obj.data)
         mesh_obj.data.update()
+        return mesh_obj
 
     def convert_curve_to_mesh(self,curve_obj,name):
-
-        curve_mesh=curve_obj.to_mesh()
+        print('######### Convert to Mesh ########')
+        curve_mesh=curve_obj.to_mesh().copy()
         depsgraph = self.context.evaluated_depsgraph_get()
 
         obj_eval= curve_mesh.evaluated_get(depsgraph)
@@ -805,7 +811,7 @@ class RenderOperator(bpy.types.Operator):
 
         bm.from_mesh(obj_eval)
         bm.to_mesh(tmpMesh)       
-        curve_mesh=bpy.data.objects.new(f"{name}", tmpMesh)
+        curve_mesh=bpy.data.objects.new(f"{name}_cylinder", tmpMesh)
         
         bm.transform(curve_obj.matrix_world)
 
@@ -860,6 +866,13 @@ class RenderOperator(bpy.types.Operator):
         for mesh in bpy.data.meshes:
             if name in mesh.name:
                 bpy.data.meshes.remove(bpy.data.meshes[mesh.name])
+   
+    def clear_circles(self):
+
+        for curve in bpy.data.curves:
+            if 'BezierCircle' in curve.name:
+                bpy.data.curves.remove(bpy.data.curves[curve.name])
+
 
     def get_collection(self,name):
             # find all the collections and remove them
