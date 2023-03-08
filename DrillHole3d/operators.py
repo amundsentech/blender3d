@@ -245,12 +245,13 @@ class RenderOperator(bpy.types.Operator):
 
     bl_idname = "object.render_holes"
     bl_label = "Render Drill Holes"
-
+    
 
     def __init__(self):
         
         self.context=None
         self.color_cols=[]
+        self.color_data=pd.DataFrame()
         self.colormaps={}
         self.render_col=''
         self.volume=1
@@ -332,15 +333,23 @@ class RenderOperator(bpy.types.Operator):
             cmap='coolwarm'
 
 
+        self.color_data=data.copy()
 
         color_cols.append(self.render_col)
         for c in color_cols:
             print(c)
             data[c]=pd.to_numeric(data[c],errors='coerce').fillna(0)
 
-            max=data[c].max()
-            min=data[c].min()
-            self.colormaps[c]=MplColorHelper(cmap_name=cmap,start_val=min,stop_val=max)
+            std=data[c].std(ddof=4)
+            mean=data[c].mean()
+
+            self.color_data[c]=data[c]
+
+            max=self.color_data[c].max()
+            min=self.color_data[c].min()
+
+
+            self.colormaps[c]=MplColorHelper(cmap_name=cmap,center_val=mean,range=std)
 
 
         ## check the variable we need to render
@@ -354,7 +363,8 @@ class RenderOperator(bpy.types.Operator):
         sheet_collection = self.get_collection(name=collection_name)
         try:bpy.context.scene.collection.children.link(sheet_collection)
         except:pass
-        groups=data.groupby(collar_col)
+
+        groups=self.color_data.groupby(collar_col)
         
         ## lop through all the drill holes
         for drillgroup in groups:
@@ -586,11 +596,12 @@ class RenderOperator(bpy.types.Operator):
 
         curve_obj.data.bevel_object = circle
         curve_obj.data.dimensions='3D'
-        curve_obj.data.bevel_mode='ROUND'
+        curve_obj.data.bevel_mode='OBJECT'
         curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
         curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
         curve_obj.data.bevel_depth = self.volume
         curve_obj.data.bevel_resolution = 2
+        curve_obj.data.use_path_follow=True
         curve_obj.data.use_path_follow=True
 
 
@@ -710,7 +721,7 @@ class RenderOperator(bpy.types.Operator):
         curve_mesh.parent=curve_obj
 
         collar_collection.objects.link(curve_mesh)
-        bpy.data.objects.remove(curve_obj)
+        # bpy.data.objects.remove(curve_obj)
 
         return curve_mesh
 
@@ -871,11 +882,17 @@ from matplotlib import cm
 
 class MplColorHelper:
 
-  def __init__(self, cmap_name, start_val, stop_val):
+  def __init__(self, cmap_name, start_val=1, stop_val=0,center_val=None,range=None):
     self.cmap_name = cmap_name
     self.cmap = plt.get_cmap(cmap_name)
-    self.norm = mpl.colors.Normalize(vmin=start_val, vmax=stop_val)
+    if center_val:
+        self.norm = mpl.colors.CenteredNorm(vcenter=center_val, halfrange=range)
+    else:
+        self.norm = mpl.colors.Normalize(vmin=start_val, vmax=stop_val)
+
     self.scalarMap = cm.ScalarMappable(norm=self.norm, cmap=self.cmap)
+
+
 
 
   def get_rgb(self, val):

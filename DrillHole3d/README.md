@@ -65,4 +65,12 @@ You will be prompted to choose the columns from each sheet or your single sheet 
 
 Finally, choose the columns that you would like to see colored in the viewport ,the color map you would like to use and radius of the drill hole then click the "Render Drill Holes" Button button to render the data.
 
+![Color map options are sourced from Mat plot lib](figures/suggested_maps.png)
+![We have access to the entire suite of collor maps here some other options](figures/segq_colors.png)
+![Sequential](figures/seq_colors.png)
+![Sequential continued](figures/seq2_colors.png)
+![Color map options are sourced from Mat plot lib](figures/perc_uni_colors.png)
+![Color map options are sourced from Mat plot lib](figures/diverging.png)
+
 If you wuld like to change the colors of the data you are viewing simply change the column and click the "Render Drill Holes" Button again.
+Note: If you are importing a large amount of drill hole the initial render process can be slow. switch to the scripting view before clicking "Render Drill Holes"to monitor progress.

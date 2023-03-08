@@ -117,7 +117,7 @@ class AzimuthDropDownMenu(bpy.types.Menu):
     # Define the dropdown options
     def draw(self, context):
         layout = self.layout
-        
+
         dropdown_items = context.scene['Headers']
         
         options= create_dropdown_options(dropdown_items)
