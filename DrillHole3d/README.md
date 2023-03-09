@@ -1,3 +1,4 @@
+# Drill Hole 3d- A tool for Visualizing Geological Drill Hole Data in Blender
 # File Type Options for Data Rendering
 
 This repository contains a blender add on that can be used to visualize Drill Hole data based on two different file type options. The first option is a file(.CSV or .XLSX) that contains XYZ coordinates for the data, and the second option is an .XLSX file with 3 sheets conatings data that can be used to build the Drill Hole.
