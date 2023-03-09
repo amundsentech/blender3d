@@ -78,6 +78,3 @@ Color maps are sourced from Matplot libs color ramp options.
 ![Sequential continued](figures/seq2_colors.png)
 ![Color map options are sourced from Mat plot lib](figures/perc_uni_colors.png)
 ![Color map options are sourced from Mat plot lib](figures/diverging.png)
-
-If you wuld like to change the colors of the data you are viewing simply change the column and click the "Render Drill Holes" Button again.
-Note: If you are importing a large amount of drill hole the initial render process can be slow. switch to the scripting view before clicking "Render Drill Holes"to monitor progress.
