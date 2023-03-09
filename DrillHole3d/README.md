@@ -22,9 +22,9 @@ The three sheets should have the following formats:
 
 | hole_id | x_utm | y_utm | z_elevation |
 |---------|-------|-------|-------|
-| hole_1  | 12345 | 67890 | 1200  |
-| hole_2  | 23456 | 78901 | 1300  |
-| hole_3  | 34567 | 89012 | 960   |
+| 1  | 12345 | 67890 | 1200  |
+| 2  | 23456 | 78901 | 1300  |
+| 3  | 34567 | 89012 | 960   |
 | ...     | ...   | ...   | ...   |
 
 ### Sheet 2: Survey Information
