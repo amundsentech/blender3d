@@ -6,7 +6,7 @@ import sys
 import os
 import matplotlib as plt
 from pyproj import Transformer,Proj
-import math
+from mathutils import Vector
 from tqdm.auto import tqdm
 # import BlenderGIS as bgis
 # from BlenderGIS.geoscene import GeoScene, GEOSCENE_OT_coords_viewer
@@ -403,8 +403,9 @@ class RenderOperator(bpy.types.Operator):
                                                 name=collar_name,
                                                 collection=collar_collection)
                                                 
-            self.create_color_attrs(hole_obj=hole_mesh)
+            self.create_num_attrs(hole_obj=hole_mesh,coords=coords,data=group)
             mesh_obj=self.color_mesh(gpencil=gpencil,mesh_obj=hole_mesh,color_name=self.render_col)
+        
         self.clear_circles()
 
         print('--------------------------------')
@@ -527,9 +528,12 @@ class RenderOperator(bpy.types.Operator):
             except Exception as e : print(f'Expcetion:{c}',e)
         return obj
 
-    def create_num_attrs(self,hole_obj,data):
+    def create_num_attrs(self,hole_obj,data,coords):
+        print('######## CREATE NUMERICAL ATTRIBUTES########')
+        print(f'######## {len(coords)} Samples ########')
         bar=tqdm(range(len(self.color_cols)))
         bar.set_description(f'Processing {hole_obj.name} Attr table')
+
         for obj in hole_obj.children:
             if obj.data.name in bpy.data.meshes:
                 for c in self.color_cols:
@@ -544,8 +548,9 @@ class RenderOperator(bpy.types.Operator):
                                 val=0
 
                             float_layer.data[i].value=val
+                            float_layer.data[i].co=coords[i]
                     except Exception as e : print(f'Expcetion:{c}',e)
-        return obj
+        return hole_obj
     
     def create_shape_keys(self,obj,data,coords):
 
@@ -558,7 +563,7 @@ class RenderOperator(bpy.types.Operator):
             shape_key.value=(i/len(coords))
         return obj
 
-    def create_color_attrs(self,hole_obj):
+    def create_color_attrs(self,hole_obj,data):
         print('######## CREATE COLOR ATTRIBUTES########')
 
         for obj in hole_obj.children:
@@ -571,7 +576,7 @@ class RenderOperator(bpy.types.Operator):
                     color_layer =obj.data.color_attributes.new(name=f'{c}_color',type='FLOAT_COLOR',domain='POINT')
                     try:
                         ## update the attributes 
-                        bar=tqdm(self.color_datadata.iterrows())
+                        bar=tqdm(data.iterrows())
                         for i,row in bar:
                             val=row[c]  
                             if val==np.nan:
@@ -599,10 +604,10 @@ class RenderOperator(bpy.types.Operator):
 
         curve_obj.data.bevel_object = circle
         curve_obj.data.dimensions='3D'
-        curve_obj.data.bevel_mode='OBJECT'
+        # curve_obj.data.bevel_mode='OBJECT'
         curve_obj.data.bevel_mode='ROUND'
-        curve_obj.data.bevel_factor_mapping_start = 'SEGMENTS'
-        curve_obj.data.bevel_factor_mapping_end = 'SEGMENTS'
+        curve_obj.data.bevel_factor_mapping_start = 'RESOLUTION'
+        curve_obj.data.bevel_factor_mapping_end = 'RESOLUTION'
         curve_obj.data.bevel_depth = self.volume
         curve_obj.data.bevel_resolution = 2
         curve_obj.data.use_path_follow=True
@@ -721,14 +726,15 @@ class RenderOperator(bpy.types.Operator):
         curve_obj=self.make_tube(curve_obj=curve_obj,name=name,coords=coords,collar_collection=collar_collection)
         
         ## parent stuff so they are organized      
-        curve_mesh=self.convert_curve_to_mesh(curve_obj=curve_obj,name=name)
+        curve_mesh=self.convert_curve_to_mesh(curve_obj=curve_obj,name=name,coords=coords)
 
 
         collar_collection.objects.link(curve_mesh)
 
         # curve_mesh.parent=curve_obj
+        curve_obj.data.bevel_depth=0
 
-        bpy.data.objects.remove(curve_obj)
+        # bpy.data.objects.remove(curve_obj)
 
         return curve_mesh
 
@@ -771,25 +777,46 @@ class RenderOperator(bpy.types.Operator):
         bm.from_mesh(mesh_obj.data)
         print(f'######## {len(bm.faces)} Faces ########')
 
+
         bar=tqdm(range(len(bm.faces)))
         bar.set_description(f'Processing {color_name} Color Attr Faces')
 
+        # Get the vertices of the mesh
+        point_verts = [point.co for point in points]
+        point_colors = {i:point.vertex_color for i,point in enumerate(points)}
+        # Create a matrix with the coordinates of the mesh vertices
+        point_matrix = np.array(point_verts)
+
         for face in bm.faces:
+            # Get the vertices of the mesh
+            face_verts = [point.co for point in face.verts]
+            # Create a matrix with the coordinates of the mesh vertices
+            face_matrix = np.array(face_verts)
+            center = np.mean(face_matrix , axis=0)
+
+            dist=np.linalg.norm(center-point_matrix,axis=1)**2
+            min_dist=np.argmin(dist)
+
+            # print(dist)
+            # print(min_dist)
+            
+            closest_color=point_colors[min_dist]
             bar.update(1)
-            min_dist=np.inf
-            for i,point in enumerate(points):
-                gp_pos = mesh_obj.matrix_world @ point.co
-                face_center = mesh_obj.matrix_world @ face.calc_center_median()
-                dist = abs(gp_pos.z - face_center.z)
-                if dist < min_dist:
-                    samp_index=i
-                    closest_point = point
-                    min_dist = dist
-            mat_name=f'{mesh_obj.name} Sample {samp_index} {color_name}'
+            # min_dist=np.inf
+            # for i,point in enumerate(points):
+            #     gp_pos = mesh_obj.matrix_world @ point.co
+            #     face_center = mesh_obj.matrix_world @ face.calc_center_median()
+            #     dist = abs(gp_pos.z - face_center.z)
+            #     if dist < min_dist:
+            #         samp_index=i
+            #         closest_point = point
+            #         min_dist = dist
+
+            mat_name=f'{mesh_obj.name} Sample {min_dist} {color_name}'
 
             if mat_name not in bpy.data.materials:
                 mat = bpy.data.materials.new(mat_name)
-                mat.diffuse_color = closest_point.vertex_color
+                mat.diffuse_color = closest_color
                 mesh_obj.data.materials.append(mat)
                 mesh_obj.data.update()
 
@@ -800,7 +827,7 @@ class RenderOperator(bpy.types.Operator):
         mesh_obj.data.update()
         return mesh_obj
 
-    def convert_curve_to_mesh(self,curve_obj,name):
+    def convert_curve_to_mesh(self,curve_obj,name,coords):
         print('######### Convert to Mesh ########')
         curve_mesh=curve_obj.to_mesh().copy()
         depsgraph = self.context.evaluated_depsgraph_get()
@@ -810,31 +837,34 @@ class RenderOperator(bpy.types.Operator):
         tmpMesh = bpy.data.meshes.new(f'{name}_mesh')
 
         bm.from_mesh(obj_eval)
+
+
         bm.to_mesh(tmpMesh)       
         curve_mesh=bpy.data.objects.new(f"{name}_cylinder", tmpMesh)
         
         bm.transform(curve_obj.matrix_world)
+        bm=self.split_mesh(bm=bm,coords=coords)
+        bm.to_mesh(curve_mesh.data)  
 
         return curve_mesh
 
-    def make_custom_color_prop(self,obj,color,name):
-        
-        rna_ui = obj.get('_RNA_UI')
-        if rna_ui is None:
-            obj['_RNA_UI'] = {}
+    def split_mesh(self,bm,coords):
+        last_point=Vector(coords[0])
+        for point in coords[1:]:
 
-        rna_ui = obj['_RNA_UI']
-        custom_prop={ 'property_name':name, 'property_type':'FLOAT_ARRAY',"default":color,'description':f"{name} color", "array_length":4, 'subtype':'COLOR'}
-        obj[name]=color
-        rna_ui[name]=custom_prop
-        return obj[name]
+            plane_co = Vector(point)
+            plane_no = (plane_co-last_point).normalized()
+
+            bmesh.ops.bisect_plane(bm, geom=bm.faces[:], plane_co=plane_co, plane_no=plane_no)
+            last_point=Vector(point)
+        return bm
+
 
     def make_curve_material(self,curve_obj,gp_layer):
 
         # set up vertex colors for Bezier Curve object
         mat = bpy.data.materials.new(name=f"{curve_obj} VertexColors")
         mat.use_nodes = True
-        print(dir(mat))
         nodes = mat.node_tree.nodes
         links = mat.node_tree.links
         bsdf_node = nodes.get("Principled BSDF")
@@ -872,7 +902,6 @@ class RenderOperator(bpy.types.Operator):
         for curve in bpy.data.curves:
             if 'BezierCircle' in curve.name:
                 bpy.data.curves.remove(bpy.data.curves[curve.name])
-
 
     def get_collection(self,name):
             # find all the collections and remove them

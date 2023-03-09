@@ -21,6 +21,11 @@ class SheetDropDownOperator(bpy.types.Operator):
 
         scene['HoleData']=data
         scene['Headers']=headers
+        scene['LocationHeaders']=headers
+        scene['SurveyHeaders']=headers
+        scene['DataHeaders']=headers
+
+
 
         return {'FINISHED'}
 

@@ -100,7 +100,7 @@ class DipDropDownMenu(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         
-        dropdown_items = context.scene['Headers']
+        dropdown_items = context.scene['SurveyHeaders']
         
         options= create_dropdown_options(dropdown_items)
 
@@ -118,7 +118,7 @@ class AzimuthDropDownMenu(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
 
-        dropdown_items = context.scene['Headers']
+        dropdown_items = context.scene['SurveyHeaders']
         
         options= create_dropdown_options(dropdown_items)
 
