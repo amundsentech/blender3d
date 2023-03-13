@@ -1,3 +1,6 @@
+
+![map.life](C:\Users\sebas\git\blender3d\DrillHole3d\figures\map-life-logo-black.png)
+
 # Drill Hole 3d- A tool for Visualizing Geological Drill Hole Data in Blender
 # File Type Options for Data Rendering
 
