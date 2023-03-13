@@ -24,8 +24,30 @@ pkgs = {'pandas': 'pd',
  }
 
 
+# Blender's Python executable
+pybin = bpy.app.binary_path
+
+def add_user_site():
+    # Locate users site-packages (writable)
+    user_site = subprocess.check_output([pybin, "-m", "site", "--user-site"])
+    user_site = user_site.decode("utf8").rstrip("\n")   # Convert to string and remove line-break
+    # Add user packages to sys.path (if it exits)
+    user_site_exists = user_site is not None
+    if user_site not in sys.path and user_site_exists:
+        sys.path.append(user_site)
+    return user_site_exists
+
+def enable_pip():
+    print('######### ENSURE PIP #######')
+    if importlib.util.find_spec("pip") is None:
+        subprocess.check_call([pybin, "-m", "ensurepip", "--user"])
+        subprocess.check_call([pybin, "-m", "pip", "install", "--upgrade", "pip", "--user"])
+
 def check_packages():
+    print('######### ENSURE PACKAGES #######')
     for p in pkgs:
+        
+
         s = pkgs[p]
         try:
             print(f'check for {p}')
@@ -33,7 +55,7 @@ def check_packages():
             
         except ImportError:
             print(f'{p} is not installed and has to be installed')
-            subprocess.call([sys.executable, '-m', 'pip', 'install', p])
+            subprocess.call([pybin, '-m', 'pip', 'install', p])
         finally:
             try:
                 s = importlib.import_module(p)
@@ -43,8 +65,6 @@ def check_packages():
                 print(f'{p} was not properly installed')
     return
 
-check_packages()
-
 def check_xl_version():
     xl=version('openpyxl')
     xl.split('.')
@@ -52,7 +72,14 @@ def check_xl_version():
     vers=[int(v) for v in vers]
     if  vers[0]!=3 and vers[1]!=1 and vers[-1]!=0 :
         print(xl,'wrong version')
-        subprocess.call([sys.executable, '-m', 'pip', 'install', '--force-reinstall','-v', "openpyxl==3.1.0"])
+        subprocess.call([pybin, '-m', 'pip', 'install', '--force-reinstall','-v', "openpyxl==3.1.0"])
+
+## ADD THE BLENDER PYTHON LOCATION
+# user_site_added = add_user_site()
+## IF NO PIP ENBALE PIP
+enable_pip()
+## CHECK PACKAGES
+check_packages()
 
 check_xl_version()
 

@@ -71,7 +71,7 @@ If you would like to change the colors of the data you are viewing simply change
 Note: If you are importing a large amount of drill hole the initial render process can be slow. Switch to the scripting view before clicking "Render Drill Holes" to monitor progress.
 
 ## Coloring options
-Color maps are sourced from Matplot libs color ramp options.
+Color maps are sourced from Matplot Lib's color ramp options.
 
 ![Color map options are sourced from Mat plot lib](figures/suggested_maps.png)
 ![We have access to the entire suite of collor maps here some other options](figures/segq_colors.png)

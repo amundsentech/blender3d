@@ -1,7 +1,12 @@
 import bpy
 import bmesh
 import addon_utils as addons
-
+import pkgutil
+import importlib
+from importlib.metadata import version
+from pathlib import Path
+import subprocess
+import sys
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -26,8 +31,20 @@ bl_info = {
     "category" : "3D View",
     "addons": ["BlenderGIS"]
 }
+pkgs = {'pandas': 'pd',
+ 'tqdm': 'tqdm',
+ 'numpy':'np',
+ 'openpyxl':'pxl',
+ 'debugpy':'debugpy',
+ 'pyproj':'pyproj',
+#  'GDAL':'GDAL',
+ 'matplotlib':'matplotlib'
+ }
 
-
+import subprocess
+import sys
+import os
+ 
 
 
 from . import auto_load
